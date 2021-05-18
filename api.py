@@ -16,6 +16,8 @@ db = pymysql.connect(
 cursor = db.cursor(pymysql.cursors.DictCursor)
 
 
+# CRUD
+# READ API
 @app.route('/user/<user_id>', methods=["GET"])
 async def get_user_by_id(request, user_id):
     query = f"SELECT * FROM user WHERE user_id = {user_id};"
@@ -31,7 +33,7 @@ async def get_user_by_id(request, user_id):
 @app.route('/user/<user_id>/star', methods=["GET"])
 async def get_star_by_user(request, user_id):
     if "weekday" in request.args:
-        weekday = request.args["weekday"]
+        weekday = request.raw_args["weekday"]
         query = f"SELECT * FROM star WHERE user_id = {user_id} AND weekday = {weekday};"
     else:
         query = f"SELECT * FROM star WHERE user_id = {user_id};"
