@@ -1,7 +1,8 @@
 import pymysql
 from sanic import Sanic
-from sanic.response import json
+from sanic.response import json, text
 
+import utils
 import config
 
 
@@ -116,6 +117,22 @@ async def get_history_by_episode(request, episode_id):
     cursor.execute(query)
     result = cursor.fetchall()
     return json(result)
+
+
+# CREATE API
+@app.route('/user', methods=["POST"])
+async def create_user(request):
+    assert "user_id" in request.json, "User ID (user_id) must be specified."
+    assert "pw" in request.json, "Password (pw) must be specified."
+    assert "name" in request.json, "Username (name) must be specified."
+    user_id = request.json["user_id"]
+    pw = utils.sha512(request.json["pw"])
+    name = request.json["name"]
+    query = "INSERT INTO user (user_id, pw, name) VALUES (%s, %s, %s);"
+    cursor.execute(query, (user_id, pw, name))
+    db.commit()
+
+    return text(user_id)
 
 
 if __name__ == "__main__":
