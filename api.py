@@ -37,7 +37,9 @@ async def get_user_by_id(request, user_id):
 async def get_star_by_user(request, user_id):
     if "weekday" in request.args:
         weekday = request.raw_args["weekday"]
-        query = "SELECT * FROM star WHERE user_id = %s AND weekday = %s;"
+        if not weekday in utils.WEEKDAY_REPRS:
+            return text("Weekday representation should be one of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
+        query = "SELECT * FROM star WHERE user_id = %s AND weekday LIKE CONCAT('%', %s, '%');"
         cursor.execute(query, user_id, weekday)
     else:
         query = "SELECT * FROM star WHERE user_id = %s;"
@@ -148,6 +150,8 @@ async def create_toon(request):
     synopsis = request.json.get("synopsis")
     platform = request.json["platform"]
     weekday = request.json["weekday"]
+    if not utils.verify_weekday(weekday):
+        return text("Weekday representation should be one of the combinations of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
     url = request.json["url"]
     thumbnail_url = request.json["thumbnail_url"]
     query = "INSERT INTO toon (title, synopsis, platform, weekday, url, thumbnail_url) VALUES (%s, %s, %s, %s, %s, %s)"
