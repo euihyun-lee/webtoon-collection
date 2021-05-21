@@ -134,8 +134,26 @@ async def create_user(request):
     query = "INSERT INTO user (user_id, pw, name) VALUES (%s, %s, %s);"
     cursor.execute(query, (user_id, pw, name))
     db.commit()
-
     return text(user_id)
+
+
+@app.route('/toon', methods=["POST"])
+async def create_toon(request):
+    assert "title" in request.json, "Title (title) must be specified."
+    assert "platform" in request.json, "Platform (platform) must be specified."
+    assert "weekday" in request.json, "Weekday (weekday) must be specified."
+    assert "url" in request.json, "URL (url) must be specified."
+    assert "thumbnail_url" in request.json, "Thumbnail URL (thumbnail_url) must be specified."
+    title = request.json["title"]
+    synopsis = request.json.get("synopsis")
+    platform = request.json["platform"]
+    weekday = request.json["weekday"]
+    url = request.json["url"]
+    thumbnail_url = request.json["thumbnail_url"]
+    query = "INSERT INTO toon (title, synopsis, platform, weekday, url, thumbnail_url) VALUES (%s, %s, %s, %s, %s, %s)"
+    cursor.execute(query, (title, synopsis, platform, weekday, url, thumbnail_url))
+    db.commit()
+    return text(str(cursor.lastrowid))
 
 
 if __name__ == "__main__":
