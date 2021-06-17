@@ -178,5 +178,16 @@ async def create_episode(request):
     return text(str(cursor.lastrowid))
 
 
+@app.route('/history', methods=["POST"])
+async def create_history(request):
+    json_dict = request.json
+    user_id = utils.check_and_get(json_dict, "user_id")
+    episode_id = utils.check_and_get(json_dict, "episode_id")
+    query = "INSERT INTO history (user_id, episode_id) VALUES (%s, %s);"
+    cursor.execute(query, (user_id, episode_id))
+    db.commit()
+    return text(str(cursor.lastrowid))
+
+
 if __name__ == "__main__":
     app.run()
