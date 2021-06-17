@@ -160,5 +160,17 @@ async def create_toon(request):
     return text(str(cursor.lastrowid))
 
 
+@app.route('/star', methods=["POST"])
+async def create_toon(request):
+    assert "user_id" in request.json, "User ID (user_id) must be specified."
+    assert "toon_id" in request.json, "Toon ID (toon_id) must be specified."
+    user_id = request.json["user_id"]
+    toon_id = request.json["toon_id"]
+    query = "INSERT INTO star (user_id, toon_id) VALUES (%s, %s)"
+    cursor.execute(query, (user_id, toon_id))
+    db.commit()
+    return text(str(cursor.lastrowid))
+
+
 if __name__ == "__main__":
     app.run()
