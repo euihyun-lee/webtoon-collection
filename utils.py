@@ -32,3 +32,9 @@ def verify_weekday(string):
             return False
 
     return True
+
+
+def check_and_get(json_dict, key, optional=False):
+    if not optional:
+        assert key in json_dict, f"{key} must be specified."
+    return json_dict.get(key)

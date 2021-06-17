@@ -127,12 +127,10 @@ async def get_history_by_episode(request, episode_id):
 # CREATE API
 @app.route('/user', methods=["POST"])
 async def create_user(request):
-    assert "user_id" in request.json, "User ID (user_id) must be specified."
-    assert "pw" in request.json, "Password (pw) must be specified."
-    assert "name" in request.json, "Username (name) must be specified."
-    user_id = request.json["user_id"]
-    pw = utils.sha512(request.json["pw"])
-    name = request.json["name"]
+    json_dict = request.json
+    user_id = utils.check_and_get(json_dict, "user_id")
+    pw = utils.sha512(utils.check_and_get(json_dict, "pw"))
+    name = utils.check_and_get(json_dict, "name")
     query = "INSERT INTO user (user_id, pw, name) VALUES (%s, %s, %s);"
     cursor.execute(query, (user_id, pw, name))
     db.commit()
@@ -141,33 +139,41 @@ async def create_user(request):
 
 @app.route('/toon', methods=["POST"])
 async def create_toon(request):
-    assert "title" in request.json, "Title (title) must be specified."
-    assert "platform" in request.json, "Platform (platform) must be specified."
-    assert "weekday" in request.json, "Weekday (weekday) must be specified."
-    assert "url" in request.json, "URL (url) must be specified."
-    assert "thumbnail_url" in request.json, "Thumbnail URL (thumbnail_url) must be specified."
-    title = request.json["title"]
-    synopsis = request.json.get("synopsis")
-    platform = request.json["platform"]
-    weekday = request.json["weekday"]
+    json_dict = request.json
+    title = utils.check_and_get(json_dict, "title")
+    synopsis = utils.check_and_get(json_dict, "synopsis", optional=True)
+    platform = utils.check_and_get(json_dict, "platform")
+    weekday = utils.check_and_get(json_dict, "weekday")
     if not utils.verify_weekday(weekday):
         return text("Weekday representation should be one of the combinations of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
-    url = request.json["url"]
-    thumbnail_url = request.json["thumbnail_url"]
-    query = "INSERT INTO toon (title, synopsis, platform, weekday, url, thumbnail_url) VALUES (%s, %s, %s, %s, %s, %s)"
+    url = utils.check_and_get(json_dict, "url")
+    thumbnail_url = utils.check_and_get(json_dict, "thumbnail_url")
+    query = "INSERT INTO toon (title, synopsis, platform, weekday, url, thumbnail_url) VALUES (%s, %s, %s, %s, %s, %s);"
     cursor.execute(query, (title, synopsis, platform, weekday, url, thumbnail_url))
     db.commit()
     return text(str(cursor.lastrowid))
 
 
 @app.route('/star', methods=["POST"])
-async def create_toon(request):
-    assert "user_id" in request.json, "User ID (user_id) must be specified."
-    assert "toon_id" in request.json, "Toon ID (toon_id) must be specified."
-    user_id = request.json["user_id"]
-    toon_id = request.json["toon_id"]
-    query = "INSERT INTO star (user_id, toon_id) VALUES (%s, %s)"
+async def create_star(request):
+    json_dict = request.json
+    user_id = utils.check_and_get(json_dict, "user_id")
+    toon_id = utils.check_and_get(json_dict, "toon_id")
+    query = "INSERT INTO star (user_id, toon_id) VALUES (%s, %s);"
     cursor.execute(query, (user_id, toon_id))
+    db.commit()
+    return text(str(cursor.lastrowid))
+
+
+@app.route('/episode', methods=["POST"])
+async def create_episode(request):
+    json_dict = request.json
+    toon_id = utils.check_and_get(json_dict, "toon_id")
+    title = utils.check_and_get(json_dict, "title")
+    url = utils.check_and_get(json_dict, "url")
+    thumbnail_url = utils.check_and_get(json_dict, "thumbnail_url")
+    query = "INSERT INTO episode (toon_id, title, url, thumbnail_url) VALUES (%s, %s, %s, %s);"
+    cursor.execute(query, (toon_id, title, url, thumbnail_url))
     db.commit()
     return text(str(cursor.lastrowid))
 
