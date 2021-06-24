@@ -23,14 +23,10 @@ def sha512(string):
 
 
 def verify_weekday(string):
-    if len(string) % 3 > 0:
-        return False
-    
-    weekdays = [string[3*i:3*(i+1)] for i in range(len(string) // 3)]
+    weekdays = string.split(',')
     for weekday in weekdays:
         if not weekday in WEEKDAY_REPRS:
             return False
-
     return True
 
 
