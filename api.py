@@ -189,5 +189,69 @@ async def create_history(request):
     return text(str(cursor.lastrowid))
 
 
+# UPDATE API
+@app.route('/user/<user_id>', methods=["PUT"])
+async def update_user(request, user_id):
+    json_dict = request.json
+    pw = utils.sha512(utils.check_and_get(json_dict, "pw"))
+    name = utils.check_and_get(json_dict, "name")
+    query = "UPDATE user SET pw = %s, name = %s WHERE user_id = %s;"
+    cursor.execute(query, (pw, name, user_id))
+    db.commit()
+    return text(user_id)
+
+
+@app.route('/toon/<toon_id>', methods=["PUT"])
+async def update_toon(request, toon_id):
+    json_dict = request.json
+    title = utils.check_and_get(json_dict, "title")
+    synopsis = utils.check_and_get(json_dict, "synopsis", optional=True)
+    platform = utils.check_and_get(json_dict, "platform")
+    weekday = utils.check_and_get(json_dict, "weekday")
+    if not utils.verify_weekday(weekday):
+        return text("Weekday representation should be one of the combinations of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
+    url = utils.check_and_get(json_dict, "url")
+    thumbnail_url = utils.check_and_get(json_dict, "thumbnail_url")
+    query = "UPDATE toon SET title = %s, synopsis = %s, platform = %s, weekday = %s, url = %s, thumbnail_url = %s WHERE toon_id = %s;"
+    cursor.execute(query, (title, synopsis, platform, weekday, url, thumbnail_url, toon_id))
+    db.commit()
+    return text(toon_id)
+
+
+@app.route('/star/<star_id>', methods=["PUT"])
+async def update_star(request, star_id):
+    json_dict = request.json
+    user_id = utils.check_and_get(json_dict, "user_id")
+    toon_id = utils.check_and_get(json_dict, "toon_id")
+    query = "UPDATE star SET user_id = %s, toon_id = %s WHERE star_id = %s;"
+    cursor.execute(query, (user_id, toon_id, star_id))
+    db.commit()
+    return text(star_id)
+
+
+@app.route('/episode/<episode_id>', methods=["PUT"])
+async def update_episode(request, episode_id):
+    json_dict = request.json
+    toon_id = utils.check_and_get(json_dict, "toon_id")
+    title = utils.check_and_get(json_dict, "title")
+    url = utils.check_and_get(json_dict, "url")
+    thumbnail_url = utils.check_and_get(json_dict, "thumbnail_url")
+    query = "UPDATE episode SET toon_id = %s, title = %s, url = %s, thumbnail_url = %s WHERE episode_id = %s;"
+    cursor.execute(query, (toon_id, title, url, thumbnail_url, episode_id))
+    db.commit()
+    return text(episode_id)
+
+
+@app.route('/history/<history_id>', methods=["PUT"])
+async def update_history(request, history_id):
+    json_dict = request.json
+    user_id = utils.check_and_get(json_dict, "user_id")
+    episode_id = utils.check_and_get(json_dict, "episode_id")
+    query = "UPDATE view_history SET user_id = %s, episode_id = %s WHERE history_id = %s;"
+    cursor.execute(query, (user_id, episode_id, history_id))
+    db.commit()
+    return text(history_id)
+
+
 if __name__ == "__main__":
     app.run()
