@@ -39,10 +39,10 @@ async def get_star_by_user(request, user_id):
         weekday = request.raw_args["weekday"]
         if not weekday in utils.WEEKDAY_REPRS:
             return text("Weekday representation should be one of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
-        query = "SELECT * FROM star WHERE user_id = %s AND weekday LIKE CONCAT('%', %s, '%');"
+        query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NOT NULL AND weekday LIKE CONCAT('%', %s, '%');"
         cursor.execute(query, user_id, weekday)
     else:
-        query = "SELECT * FROM star WHERE user_id = %s;"
+        query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NOT NULL;"
         cursor.execute(query, user_id)
     result = cursor.fetchall()
     return json(result)
@@ -50,7 +50,7 @@ async def get_star_by_user(request, user_id):
 
 @app.route('/user/<user_id>/toon/<toon_id>/star', methods=["GET"])
 async def get_star_by_user_toon(request, user_id, toon_id):
-    query = "SELECT * FROM star WHERE user_id = %s AND toon_id = %s;"
+    query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NOT NULL AND toon_id = %s;"
     cursor.execute(query, user_id, toon_id)
     result = cursor.fetchall()
     return json(result)
@@ -58,7 +58,7 @@ async def get_star_by_user_toon(request, user_id, toon_id):
 
 @app.route('/user/<user_id>/history', methods=["GET"])
 async def get_history_by_user(request, user_id):
-    query = "SELECT * FROM view_history WHERE user_id = %s;"
+    query = "SELECT * FROM view_history WHERE user_id = %s AND deleted_at IS NOT NULL;"
     cursor.execute(query, user_id)
     result = cursor.fetchall()
     return json(result)
@@ -94,7 +94,7 @@ async def get_episode_by_toon(request, toon_id):
 
 @app.route('/star/<star_id>', methods=["GET"])
 async def get_star_by_id(request, star_id):
-    query = "SELECT * FROM star WHERE star_id = %s;"
+    query = "SELECT * FROM star WHERE star_id = %s AND deleted_at IS NOT NULL;"
     cursor.execute(query, star_id)
     result = cursor.fetchall()
     assert len(result) <= 1, f"Duplicated star ID: {star_id}"
@@ -118,7 +118,7 @@ async def get_episode_by_id(request, episode_id):
 
 @app.route('/episode/<episode_id>/history', methods=["GET"])
 async def get_history_by_episode(request, episode_id):
-    query = "SELECT * FROM view_history WHERE episode_id = %s;"
+    query = "SELECT * FROM view_history WHERE episode_id = %s AND deleted_at IS NOT NULL;"
     cursor.execute(query, episode_id)
     result = cursor.fetchall()
     return json(result)
@@ -223,7 +223,7 @@ async def update_star(request, star_id):
     json_dict = request.json
     user_id = utils.check_and_get(json_dict, "user_id")
     toon_id = utils.check_and_get(json_dict, "toon_id")
-    query = "UPDATE star SET user_id = %s, toon_id = %s WHERE star_id = %s;"
+    query = "UPDATE star SET user_id = %s, toon_id = %s WHERE star_id = %s AND deleted_at IS NOT NULL;"
     cursor.execute(query, (user_id, toon_id, star_id))
     db.commit()
     return text(star_id)
@@ -247,7 +247,7 @@ async def update_history(request, history_id):
     json_dict = request.json
     user_id = utils.check_and_get(json_dict, "user_id")
     episode_id = utils.check_and_get(json_dict, "episode_id")
-    query = "UPDATE view_history SET user_id = %s, episode_id = %s WHERE history_id = %s;"
+    query = "UPDATE view_history SET user_id = %s, episode_id = %s WHERE history_id = %s AND deleted_at IS NOT NULL;"
     cursor.execute(query, (user_id, episode_id, history_id))
     db.commit()
     return text(history_id)
