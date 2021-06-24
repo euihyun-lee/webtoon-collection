@@ -253,5 +253,48 @@ async def update_history(request, history_id):
     return text(history_id)
 
 
+# DELETE API
+@app.route('/user/<user_id>', methods=["DELETE"])
+async def delete_user(request, user_id):
+    query = "DELETE FROM user WHERE user_id = %s;"
+    cursor.execute(query, user_id)
+    db.commit()
+    return text("True") 
+
+
+@app.route('/toon/<toon_id>', methods=["DELETE"])
+async def delete_user(request, toon_id):
+    query = "DELETE FROM toon WHERE toon_id = %s;"
+    cursor.execute(query, toon_id)
+    db.commit()
+    return text("True")
+
+
+@app.route('/star/<star_id>', methods=["DELETE"])
+async def delete_user(request, star_id):
+    # query = "DELETE FROM star WHERE star_id = %s;"    # naive DELETE
+    query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE star_id = %s;"
+    cursor.execute(query, star_id)
+    db.commit()
+    return text("True")
+
+
+@app.route('/episode/<episode_id>', methods=["DELETE"])
+async def delete_user(request, episode_id):
+    query = "DELETE FROM episode WHERE episode_id = %s;"
+    cursor.execute(query, episode_id)
+    db.commit()
+    return text("True")
+
+
+@app.route('/history/<history_id>', methods=["DELETE"])
+async def delete_user(request, history_id):
+    # query = "DELETE FROM view_history WHERE history_id = %s;" # naive DELETE
+    query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE history_id = %s;"
+    cursor.execute(query, history_id)
+    db.commit()
+    return text("True")
+
+
 if __name__ == "__main__":
     app.run()
