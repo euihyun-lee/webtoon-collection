@@ -1,4 +1,6 @@
+import base64
 import pymysql
+import requests
 from sanic import Sanic
 from sanic.response import json, text
 from functools import partial
@@ -39,10 +41,10 @@ async def get_star_by_user(request, user_id):
         weekday = request.raw_args["weekday"]
         if not weekday in utils.WEEKDAY_REPRS:
             return text("Weekday representation should be one of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
-        query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NOT NULL AND weekday LIKE CONCAT('%', %s, '%');"
+        query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NULL AND weekday LIKE CONCAT('%', %s, '%');"
         cursor.execute(query, user_id, weekday)
     else:
-        query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NOT NULL;"
+        query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NULL;"
         cursor.execute(query, user_id)
     result = cursor.fetchall()
     return json(result)
@@ -50,7 +52,7 @@ async def get_star_by_user(request, user_id):
 
 @app.route('/user/<user_id>/toon/<toon_id>/star', methods=["GET"])
 async def get_star_by_user_toon(request, user_id, toon_id):
-    query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NOT NULL AND toon_id = %s;"
+    query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NULL AND toon_id = %s;"
     cursor.execute(query, user_id, toon_id)
     result = cursor.fetchall()
     return json(result)
@@ -58,7 +60,7 @@ async def get_star_by_user_toon(request, user_id, toon_id):
 
 @app.route('/user/<user_id>/history', methods=["GET"])
 async def get_history_by_user(request, user_id):
-    query = "SELECT * FROM view_history WHERE user_id = %s AND deleted_at IS NOT NULL;"
+    query = "SELECT * FROM view_history WHERE user_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, user_id)
     result = cursor.fetchall()
     return json(result)
@@ -94,7 +96,7 @@ async def get_episode_by_toon(request, toon_id):
 
 @app.route('/star/<star_id>', methods=["GET"])
 async def get_star_by_id(request, star_id):
-    query = "SELECT * FROM star WHERE star_id = %s AND deleted_at IS NOT NULL;"
+    query = "SELECT * FROM star WHERE star_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, star_id)
     result = cursor.fetchall()
     assert len(result) <= 1, f"Duplicated star ID: {star_id}"
@@ -118,7 +120,7 @@ async def get_episode_by_id(request, episode_id):
 
 @app.route('/episode/<episode_id>/history', methods=["GET"])
 async def get_history_by_episode(request, episode_id):
-    query = "SELECT * FROM view_history WHERE episode_id = %s AND deleted_at IS NOT NULL;"
+    query = "SELECT * FROM view_history WHERE episode_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, episode_id)
     result = cursor.fetchall()
     return json(result)
@@ -223,7 +225,7 @@ async def update_star(request, star_id):
     json_dict = request.json
     user_id = utils.check_and_get(json_dict, "user_id")
     toon_id = utils.check_and_get(json_dict, "toon_id")
-    query = "UPDATE star SET user_id = %s, toon_id = %s WHERE star_id = %s AND deleted_at IS NOT NULL;"
+    query = "UPDATE star SET user_id = %s, toon_id = %s WHERE star_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, (user_id, toon_id, star_id))
     db.commit()
     return text(star_id)
@@ -247,7 +249,7 @@ async def update_history(request, history_id):
     json_dict = request.json
     user_id = utils.check_and_get(json_dict, "user_id")
     episode_id = utils.check_and_get(json_dict, "episode_id")
-    query = "UPDATE view_history SET user_id = %s, episode_id = %s WHERE history_id = %s AND deleted_at IS NOT NULL;"
+    query = "UPDATE view_history SET user_id = %s, episode_id = %s WHERE history_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, (user_id, episode_id, history_id))
     db.commit()
     return text(history_id)
@@ -258,9 +260,9 @@ async def update_history(request, history_id):
 async def delete_user(request, user_id):
     query = "DELETE FROM user WHERE user_id = %s;"
     cursor.execute(query, user_id)
-    query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NOT NULL;"
+    query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, user_id)
-    query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NOT NULL;"
+    query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, user_id)
     db.commit()
     return text("True") 
@@ -270,7 +272,7 @@ async def delete_user(request, user_id):
 async def delete_toon(request, toon_id):
     query = "DELETE FROM toon WHERE toon_id = %s;"
     cursor.execute(query, toon_id)
-    query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE toon_id = %s AND deleted_at IS NOT NULL;"
+    query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE toon_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, toon_id)
     db.commit()
     return text("True")
@@ -289,7 +291,7 @@ async def delete_star(request, star_id):
 async def delete_episode(request, episode_id):
     query = "DELETE FROM episode WHERE episode_id = %s;"
     cursor.execute(query, episode_id)
-    query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE episode_id = %s AND deleted_at IS NOT NULL;"
+    query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE episode_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, episode_id)
     db.commit()
     return text("True")
@@ -302,6 +304,74 @@ async def delete_history(request, history_id):
     cursor.execute(query, history_id)
     db.commit()
     return text("True")
+
+
+# non-CRUD API
+@app.route('/unseen/user/<user_id>', methods=["GET"])
+async def unseen_user(request, user_id):
+    column = "episode.*"
+    table = "star, episode, view_history"
+    conditions = " AND ".join(["star.user_id = %s",
+                               "star.user_id = view_history.user_id",
+                               "star.toon_id = episode.toon_id",
+                               "star.deleted_at IS NULL",
+                               "view_history.deleted_at IS NULL",
+                               "episode.episode_id != view_history.episode_id"])
+    order = "episode.updated_at"
+    query = f"SELECT {column} FROM {table} WHERE {conditions} ORDER BY {order} DESC;"
+    cursor.execute(query, user_id)
+    result = cursor.fetchall()
+    return json(result)
+
+
+@app.route('/browse/<platform_name>', methods=["GET"])
+async def browse_platform(request, platform_name):
+    column = "toon.*, episode.*"
+    sub_query = "SELECT toon_id, MAX(sequence) AS max_seq FROM episode GROUP BY toon_id"
+    table = f"toon, episode, ({sub_query}) AS latest_episode"
+    conditions = ["toon.platform = %s",
+                  "toon.toon_id = latest_episode.toon_id",
+                  "episode.sequence = latest_episode.max_seq"]
+    args = [platform_name]
+    if "weekday" in request.args:
+        weekday = request.raw_args["weekday"]
+        if not weekday in utils.WEEKDAY_REPRS:
+            return text("Weekday representation should be one of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
+        conditions.append("toon.weekday LIKE CONCAT('%', %s, '%')")
+        args.append(weekday)
+    conditions = " AND ".join(conditions)
+    query = f"SELECT {column} FROM {table} WHERE {conditions};"
+    cursor.execute(query, args)
+    result = cursor.fetchall()
+    return json(result)
+
+
+@app.route('/thumbnail/toon/<toon_id>', methods=["GET"])
+async def get_toon_thumbnail(request, toon_id):
+    query = f"SELECT thumbnail_url FROM toon WHERE toon_id = %s;"
+    cursor.execute(query, toon_id)
+    result = cursor.fetchall()
+    assert len(result) <= 1, f"Duplicated toon ID: {toon_id}"
+    if len(result) == 0:
+        return text(f"No toon with toon ID: {toon_id}", status=400)
+    url = result[0]["thumbnail_url"]
+    result = requests.get(url)
+    image_b64 = base64.b64encode(result.content).decode('utf-8')
+    return text(image_b64)
+
+
+@app.route('thumbnail/episode/<episode_id>', methods=["GET"])
+async def get_episode_thumbnail(request, episode_id):
+    query = f"SELECT thumbnail_url FROM episode WHERE episode_id = %s;"
+    cursor.execute(query, episode_id)
+    result = cursor.fetchall()
+    assert len(result) <= 1, f"Duplicated episode ID: {episode_id}"
+    if len(result) == 0:
+        return text(f"No episode with episode ID: {episode_id}", status=400)
+    url = result[0]["thumbnail_url"]
+    result = requests.get(url)
+    image_b64 = base64.b64encode(result.content).decode('utf-8')
+    return text(image_b64)
 
 
 if __name__ == "__main__":
