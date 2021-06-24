@@ -258,14 +258,19 @@ async def update_history(request, history_id):
 async def delete_user(request, user_id):
     query = "DELETE FROM user WHERE user_id = %s;"
     cursor.execute(query, user_id)
+    query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NOT NULL;"
+    cursor.execute(query, user_id)
+    query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NOT NULL;"
+    cursor.execute(query, user_id)
     db.commit()
-
     return text("True") 
 
 
 @app.route('/toon/<toon_id>', methods=["DELETE"])
 async def delete_toon(request, toon_id):
     query = "DELETE FROM toon WHERE toon_id = %s;"
+    cursor.execute(query, toon_id)
+    query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE toon_id = %s AND deleted_at IS NOT NULL;"
     cursor.execute(query, toon_id)
     db.commit()
     return text("True")
@@ -283,6 +288,8 @@ async def delete_star(request, star_id):
 @app.route('/episode/<episode_id>', methods=["DELETE"])
 async def delete_episode(request, episode_id):
     query = "DELETE FROM episode WHERE episode_id = %s;"
+    cursor.execute(query, episode_id)
+    query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE episode_id = %s AND deleted_at IS NOT NULL;"
     cursor.execute(query, episode_id)
     db.commit()
     return text("True")
