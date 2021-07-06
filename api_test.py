@@ -1,3 +1,4 @@
+from pprint import pprint
 import pymysql
 import requests
 import ujson as json
@@ -41,39 +42,99 @@ def create(addr, data):
     return result
 
 
-def test_create(users, toons, stars, episodes, histories):
+def test_create(dataset):
     # Create user
-    for user in users:
+    for user in dataset["user"]:
         result = create("user", user).decode('utf-8')
-        err_msg = "Expected result {}, got: {}".format(user["user_id"], result)
+        err_msg = "Expected {}, got: {}".format(user["user_id"], result)
         assert result == user["user_id"], err_msg
     
     # Create toon
-    for index, toon in enumerate(toons, start=1):
+    for index, toon in enumerate(dataset["toon"], start=1):
         result = create("toon", toon).decode('utf-8')
-        err_msg = "Expected result {}, got: {}".format(index, result)
+        err_msg = "Expected {}, got: {}".format(index, result)
         assert result == str(index), err_msg
 
     # Create star
-    for index, star in enumerate(stars, start=1):
+    for index, star in enumerate(dataset["star"], start=1):
         result = create("star", star).decode('utf-8')
-        err_msg = "Expected result {}, got: {}".format(index, result)
+        err_msg = "Expected {}, got: {}".format(index, result)
         assert result == str(index), err_msg
 
     # Create episode
-    for index, episode in enumerate(episodes, start=1):
+    for index, episode in enumerate(dataset["episode"], start=1):
         result = create("episode", episode).decode('utf-8')
-        err_msg = "Expected result {}, got: {}".format(index, result)
+        err_msg = "Expected {}, got: {}".format(index, result)
         assert result == str(index), err_msg
 
     # Create view_history
-    for index, history in enumerate(histories, start=1):
+    for index, history in enumerate(dataset["history"], start=1):
         result = create("history", history).decode('utf-8')
-        err_msg = "Expected result {}, got: {}".format(index, result)
+        err_msg = "Expected {}, got: {}".format(index, result)
         assert result == str(index), err_msg
 
 
+def read(*addrs, **kwargs):
+    addr = '/'.join(addrs)
+    args = '&'.join(["{}={}".format(key, value) for key, value in kwargs.items()])
+    if args:
+        addr = addr + '?' + args
+    response = requests.get(f"{API_ADDR}/{addr}")
+    result = json.loads(response.content)
+    return result
+
+
+def test_read(dataset):
+    # Read user by user ID
+    for user in dataset["user"]:
+        result = read("user", user["user_id"])
+        for key in user:
+            err_msg = "Expected {} for {}, got: {}".format(user[key], key, result[key])
+            assert user[key] == result[key], err_msg
+
+    # Read starred toons & episodes by user ID
+    stars = {user["user_id"]: [] for user in dataset["user"]}
+    for index, star in enumerate(dataset["star"], start=1):
+        star_with_id = {"star_id": str(index)}
+        star_with_id.update(star)
+        stars[star["user_id"]].append(star_with_id)
+
+    for user in dataset["user"]:
+        result = read("user", user["user_id"], "star")
+        stars_by_user_id = stars[user["user_id"]]
+        err_msg = "Expected {} starred toons, got: {}".format(len(stars_by_user_id), len(result))
+        assert len(stars_by_user_id) == len(result)
+        for item in result:
+            assert "toon_id" in item, "No toon info contained"
+            assert "episode_id" in item, "No latest episode info contained"
+
+        # test for weekday specified query
+        for weekday in utils.WEEKDAY_REPRS:
+            result = read("user", user["user_id"], "star", weekday=weekday)
+            for item in result:
+                assert "toon_id" in item, "No toon info contained"
+                assert "episode_id" in item, "No latest episode info contained"
+                weekdays = item["weekday"].split(',')
+                err_msg = "Expected the toon on {}, got: {}".format(weekday, item["weekday"])
+                assert weekday in weekdays, err_msg
+    
+    # Read star by user ID & toon ID
+    for user in dataset["user"]:
+        stars_by_user_id = stars[user["user_id"]]
+        for index, toon in enumerate(dataset["toon"], start=1):
+            result = read("user", user["user_id"], "toon", str(index), "star")
+            stars_by_uid_tid = [star for star in stars_by_user_id if star["toon_id"] == str(index)]
+            assert len(result) == len(stars_by_uid_tid)
+            for star in stars_by_uid_tid:
+                for star_result in result:
+                    if star["star_id"] == star_result["star_id"]:
+                        for key in star:
+                            err_msg = "Expected {} for {}, got: {}".format(star[key], key, star_result[key])
+                            assert star[key] == star_result[key], err_msg        
+
+
 if __name__ == "__main__":
+    print("Initializing DB...")
     init_db()
 
     # Create user data
@@ -121,5 +182,16 @@ if __name__ == "__main__":
                   "episode_id": "1"},
                  {"user_id": "gildong",
                   "episode_id": "3"}]
+    
+    # Wrap up
+    dataset = {"user": users,
+               "toon": toons,
+               "star": stars,
+               "episode": episodes,
+               "history": histories}
 
-    test_create(users, toons, stars, episodes, histories)
+    print("Testing Create API...")
+    test_create(dataset)
+
+    print("Testing Read API...")
+    test_read(dataset)
