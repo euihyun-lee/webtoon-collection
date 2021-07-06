@@ -136,7 +136,7 @@ async def create_user(request):
     query = "INSERT INTO user (user_id, pw, name) VALUES (%s, %s, %s);"
     cursor.execute(query, (user_id, pw, name))
     db.commit()
-    return text(user_id)
+    return text(cursor.lastrowid)
 
 
 @app.route('/toon', methods=["POST"])
