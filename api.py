@@ -131,7 +131,7 @@ async def get_history_by_episode(request, episode_id):
 async def create_user(request):
     json_dict = request.json
     user_id = utils.check_and_get(json_dict, "user_id")
-    pw = utils.sha512(utils.check_and_get(json_dict, "pw"))
+    pw = utils.check_and_get(json_dict, "pw")
     name = utils.check_and_get(json_dict, "name")
     query = "INSERT INTO user (user_id, pw, name) VALUES (%s, %s, %s);"
     cursor.execute(query, (user_id, pw, name))
@@ -195,7 +195,7 @@ async def create_history(request):
 @app.route('/user/<user_id>', methods=["PUT"])
 async def update_user(request, user_id):
     json_dict = request.json
-    pw = utils.sha512(utils.check_and_get(json_dict, "pw"))
+    pw = utils.check_and_get(json_dict, "pw")
     name = utils.check_and_get(json_dict, "name")
     query = "UPDATE user SET pw = %s, name = %s WHERE user_id = %s;"
     cursor.execute(query, (pw, name, user_id))
