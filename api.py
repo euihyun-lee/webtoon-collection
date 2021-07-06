@@ -374,5 +374,18 @@ async def get_episode_thumbnail(request, episode_id):
     return text(image_b64)
 
 
+# Crawl Request API
+@app.route('crawl/platform/<platform_name>/toon', methods=["GET"])
+async def request_toon_crawl(request, platform_name):
+    # TODO: Request to crawl toons from <platform_name>
+    return text("Not Implemented")
+
+
+@app.route('crawl/toon/<toon_id>/episode', methods=["GET"])
+async def request_episode_crawl(request, toon_id):
+    # TODO: Request to crawl episodes from <toon_id>
+    return text("Not Implemented")
+
+
 if __name__ == "__main__":
     app.run()
