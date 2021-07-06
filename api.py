@@ -27,6 +27,7 @@ json = partial(json, dumps=utils.mysql_json_dumps())
 async def get_user_by_id(request, user_id):
     query = "SELECT * FROM user WHERE user_id = %s;"
     cursor.execute(query, user_id)
+    db.commit()
     result = cursor.fetchall()
     assert len(result) <= 1, f"Duplicated user ID: {user_id}"
     if len(result) == 0:
@@ -56,6 +57,7 @@ async def get_star_by_user(request, user_id):
     conditions = " AND ".join(conditions)
     query = f"SELECT {column} FROM {table} WHERE {conditions};"
     cursor.execute(query, args)
+    db.commit()
     result = cursor.fetchall()
     return json(result)
 
@@ -64,6 +66,7 @@ async def get_star_by_user(request, user_id):
 async def get_star_by_user_toon(request, user_id, toon_id):
     query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NULL AND toon_id = %s;"
     cursor.execute(query, (user_id, toon_id))
+    db.commit()
     result = cursor.fetchall()
     return json(result)
 
@@ -72,6 +75,7 @@ async def get_star_by_user_toon(request, user_id, toon_id):
 async def get_history_by_user(request, user_id):
     query = "SELECT * FROM view_history WHERE user_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, user_id)
+    db.commit()
     result = cursor.fetchall()
     return json(result)
 
@@ -80,6 +84,7 @@ async def get_history_by_user(request, user_id):
 async def get_toon(request):
     query = "SELECT * FROM toon;"
     cursor.execute(query)
+    db.commit()
     result = cursor.fetchall()
     return json(result)
 
@@ -88,6 +93,7 @@ async def get_toon(request):
 async def get_toon_by_id(request, toon_id):
     query = "SELECT * FROM toon WHERE toon_id = %s;"
     cursor.execute(query, toon_id)
+    db.commit()
     result = cursor.fetchall()
     assert len(result) <= 1, f"Duplicated toon ID: {toon_id}"
     if len(result) == 0:
@@ -100,6 +106,7 @@ async def get_toon_by_id(request, toon_id):
 async def get_episode_by_toon(request, toon_id):
     query = "SELECT * FROM episode WHERE toon_id = %s;"
     cursor.execute(query, toon_id)
+    db.commit()
     result = cursor.fetchall()
     return json(result)
 
@@ -108,6 +115,7 @@ async def get_episode_by_toon(request, toon_id):
 async def get_star_by_id(request, star_id):
     query = "SELECT * FROM star WHERE star_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, star_id)
+    db.commit()
     result = cursor.fetchall()
     assert len(result) <= 1, f"Duplicated star ID: {star_id}"
     if len(result) == 0:
@@ -120,6 +128,7 @@ async def get_star_by_id(request, star_id):
 async def get_episode_by_id(request, episode_id):
     query = "SELECT * FROM episode WHERE episode_id = %s;"
     cursor.execute(query, episode_id)
+    db.commit()
     result = cursor.fetchall()
     assert len(result) <= 1, f"Duplicated episode ID: {episode_id}"
     if len(result) == 0:
@@ -132,6 +141,7 @@ async def get_episode_by_id(request, episode_id):
 async def get_history_by_episode(request, episode_id):
     query = "SELECT * FROM view_history WHERE episode_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, episode_id)
+    db.commit()
     result = cursor.fetchall()
     return json(result)
 
@@ -149,6 +159,7 @@ async def create_user(request):
 
     query = "SELECT user_id FROM user WHERE user_id = %s;"
     cursor.execute(query, user_id)
+    db.commit()
     result = cursor.fetchall()
     assert len(result) == 1, f"Duplicated or no user ID: {user_id}"
     result = result[0]["user_id"]
@@ -336,6 +347,7 @@ async def unseen_user(request, user_id):
     order = "episode.updated_at"
     query = f"SELECT {column} FROM {table} WHERE {conditions} ORDER BY {order} DESC;"
     cursor.execute(query, user_id)
+    db.commit()
     result = cursor.fetchall()
     return json(result)
 
@@ -359,6 +371,7 @@ async def browse_platform(request, platform_name):
     conditions = " AND ".join(conditions)
     query = f"SELECT {column} FROM {table} WHERE {conditions};"
     cursor.execute(query, args)
+    db.commit()
     result = cursor.fetchall()
     return json(result)
 
@@ -367,6 +380,7 @@ async def browse_platform(request, platform_name):
 async def get_toon_thumbnail(request, toon_id):
     query = f"SELECT thumbnail_url FROM toon WHERE toon_id = %s;"
     cursor.execute(query, toon_id)
+    db.commit()
     result = cursor.fetchall()
     assert len(result) <= 1, f"Duplicated toon ID: {toon_id}"
     if len(result) == 0:
@@ -381,6 +395,7 @@ async def get_toon_thumbnail(request, toon_id):
 async def get_episode_thumbnail(request, episode_id):
     query = f"SELECT thumbnail_url FROM episode WHERE episode_id = %s;"
     cursor.execute(query, episode_id)
+    db.commit()
     result = cursor.fetchall()
     assert len(result) <= 1, f"Duplicated episode ID: {episode_id}"
     if len(result) == 0:
