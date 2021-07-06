@@ -37,15 +37,24 @@ async def get_user_by_id(request, user_id):
 
 @app.route('/user/<user_id>/star', methods=["GET"])
 async def get_star_by_user(request, user_id):
+    column = "toon.*, episode.*"
+    sub_query = "SELECT toon_id, MAX(sequence) AS max_seq FROM episode GROUP BY toon_id"
+    table = f"star, toon, episode, ({sub_query}) AS latest_episode"
+    conditions = ["star.user_id = %s",
+                  "star.deleted_at IS NULL",
+                  "star.toon_id = toon.toon_id",
+                  "toon.toon_id = latest_episode.toon_id",
+                  "episode.sequence = latest_episode.max_seq"]
+    args = [user_id]
     if "weekday" in request.args:
         weekday = request.raw_args["weekday"]
         if not weekday in utils.WEEKDAY_REPRS:
             return text("Weekday representation should be one of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
-        query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NULL AND weekday LIKE CONCAT('%', %s, '%');"
-        cursor.execute(query, user_id, weekday)
-    else:
-        query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NULL;"
-        cursor.execute(query, user_id)
+        conditions.append("toon.weekday LIKE CONCAT('%', %s, '%')")
+        args.append(weekday)
+    conditions = " AND ".join(conditions)
+    query = f"SELECT {column} FROM {table} WHERE {conditions};"
+    cursor.execute(query, args)
     result = cursor.fetchall()
     return json(result)
 
