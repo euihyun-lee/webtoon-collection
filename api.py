@@ -136,7 +136,13 @@ async def create_user(request):
     query = "INSERT INTO user (user_id, pw, name) VALUES (%s, %s, %s);"
     cursor.execute(query, (user_id, pw, name))
     db.commit()
-    return text(cursor.lastrowid)
+
+    query = "SELECT user_id FROM user WHERE user_id = %s;"
+    cursor.execute(query, user_id)
+    result = cursor.fetchall()
+    assert len(result) == 1, f"Duplicated or no user ID: {user_id}"
+    result = result[0]["user_id"]
+    return text(result)
 
 
 @app.route('/toon', methods=["POST"])
