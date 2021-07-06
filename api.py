@@ -44,10 +44,11 @@ async def get_star_by_user(request, user_id):
                   "star.deleted_at IS NULL",
                   "star.toon_id = toon.toon_id",
                   "toon.toon_id = latest_episode.toon_id",
+                  "latest_episode.toon_id = episode.toon_id",
                   "episode.sequence = latest_episode.max_seq"]
     args = [user_id]
     if "weekday" in request.args:
-        weekday = request.raw_args["weekday"]
+        weekday = request.args["weekday"][0]    # ignore rest duplicated args
         if not weekday in utils.WEEKDAY_REPRS:
             return text("Weekday representation should be one of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
         conditions.append("toon.weekday LIKE CONCAT('%', %s, '%')")
@@ -346,10 +347,11 @@ async def browse_platform(request, platform_name):
     table = f"toon, episode, ({sub_query}) AS latest_episode"
     conditions = ["toon.platform = %s",
                   "toon.toon_id = latest_episode.toon_id",
+                  "latest_episode.toon_id = episode.toon_id",
                   "episode.sequence = latest_episode.max_seq"]
     args = [platform_name]
     if "weekday" in request.args:
-        weekday = request.raw_args["weekday"]
+        weekday = request.args["weekday"][0]    # ignore rest duplicated args
         if not weekday in utils.WEEKDAY_REPRS:
             return text("Weekday representation should be one of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
         conditions.append("toon.weekday LIKE CONCAT('%', %s, '%')")
