@@ -51,7 +51,7 @@ async def get_star_by_user(request, user_id):
         weekday = request.args["weekday"][0]    # ignore rest duplicated args
         if not weekday in utils.WEEKDAY_REPRS:
             return text("Weekday representation should be one of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
-        conditions.append("toon.weekday LIKE CONCAT('%', %s, '%')")
+        conditions.append("toon.weekday LIKE CONCAT('%%', %s, '%%')")
         args.append(weekday)
     conditions = " AND ".join(conditions)
     query = f"SELECT {column} FROM {table} WHERE {conditions};"
@@ -63,7 +63,7 @@ async def get_star_by_user(request, user_id):
 @app.route('/user/<user_id>/toon/<toon_id>/star', methods=["GET"])
 async def get_star_by_user_toon(request, user_id, toon_id):
     query = "SELECT * FROM star WHERE user_id = %s AND deleted_at IS NULL AND toon_id = %s;"
-    cursor.execute(query, user_id, toon_id)
+    cursor.execute(query, (user_id, toon_id))
     result = cursor.fetchall()
     return json(result)
 
@@ -354,7 +354,7 @@ async def browse_platform(request, platform_name):
         weekday = request.args["weekday"][0]    # ignore rest duplicated args
         if not weekday in utils.WEEKDAY_REPRS:
             return text("Weekday representation should be one of: Mon, Tue, Wed, Thr, Fri, Sat, Sun", status=400)
-        conditions.append("toon.weekday LIKE CONCAT('%', %s, '%')")
+        conditions.append("toon.weekday LIKE CONCAT('%%', %s, '%%')")
         args.append(weekday)
     conditions = " AND ".join(conditions)
     query = f"SELECT {column} FROM {table} WHERE {conditions};"
