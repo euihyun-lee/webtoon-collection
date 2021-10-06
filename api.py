@@ -291,9 +291,9 @@ async def delete_user(request, user_id):
     query = "DELETE FROM user WHERE user_id = %s;"
     cursor.execute(query, user_id)
     query = "SET foreign_key_checks = 1;"
+    cursor.execute(query)
 
     # Soft ON DELETE CASCADE
-    cursor.execute(query)
     query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, user_id)
     query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NULL;"
