@@ -294,9 +294,15 @@ async def delete_user(request, user_id):
     cursor.execute(query)
 
     # Soft ON DELETE CASCADE
-    query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NULL;"
+    query = (
+        "UPDATE star SET deleted_at = CURRENT_TIMESTAMP "
+        "WHERE user_id = %s AND deleted_at IS NULL;"
+    )
     cursor.execute(query, user_id)
-    query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NULL;"
+    query = (
+        "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP "
+        "WHERE user_id = %s AND deleted_at IS NULL;"
+    )
     cursor.execute(query, user_id)
     db.commit()
     return text("True") 
@@ -312,8 +318,27 @@ async def delete_toon(request, toon_id):
     query = "SET foreign_key_checks = 1;"
     cursor.execute(query)
 
+    # Force ON DELETE CASCADE - due to avoiding above
+    # Do chain delete to view_history first
+    query = (
+        "UPDATE view_history, episode "
+        "SET view_history.deleted_at = CURRENT_TIMESTAMP "
+        "WHERE episode.toon_id = %s "
+        "AND view_history.deleted_at IS NULL;"
+    )
+    # Delete remaining episode rows
+    query = "SET foreign_key_checks = 0;"
+    cursor.execute(query)
+    query = "DELETE FROM episode where toon_id = %s;"
+    cursor.execute(query, toon_id)
+    query = "SET foreign_key_checks = 1;"
+    cursor.execute(query)
+
     # Soft ON DELETE CASCADE
-    query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE toon_id = %s AND deleted_at IS NULL;"
+    query = (
+        "UPDATE star SET deleted_at = CURRENT_TIMESTAMP "
+        "WHERE toon_id = %s AND deleted_at IS NULL;"
+    )
     cursor.execute(query, toon_id)
     db.commit()
     return text("True")
@@ -322,7 +347,10 @@ async def delete_toon(request, toon_id):
 @app.route('/star/<star_id>', methods=["DELETE"])
 async def delete_star(request, star_id):
     # query = "DELETE FROM star WHERE star_id = %s;"    # naive DELETE
-    query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE star_id = %s;"
+    query = (
+        "UPDATE star SET deleted_at = CURRENT_TIMESTAMP "
+        "WHERE star_id = %s AND deleted_at IS NULL;"
+    )
     cursor.execute(query, star_id)
     db.commit()
     return text("True")
@@ -339,7 +367,10 @@ async def delete_episode(request, episode_id):
     cursor.execute(query)
 
     # Soft ON DELETE CASCADE
-    query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE episode_id = %s AND deleted_at IS NULL;"
+    query = (
+        "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP "
+        "WHERE episode_id = %s AND deleted_at IS NULL;"
+    )
     cursor.execute(query, episode_id)
     db.commit()
     return text("True")
@@ -348,7 +379,10 @@ async def delete_episode(request, episode_id):
 @app.route('/history/<history_id>', methods=["DELETE"])
 async def delete_history(request, history_id):
     # query = "DELETE FROM view_history WHERE history_id = %s;" # naive DELETE
-    query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE history_id = %s;"
+    query = (
+        "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP "
+        "WHERE history_id = %s AND deleted_at IS NULL;"
+    )
     cursor.execute(query, history_id)
     db.commit()
     return text("True")
