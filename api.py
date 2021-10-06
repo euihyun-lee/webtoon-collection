@@ -285,8 +285,15 @@ async def update_history(request, history_id):
 # DELETE API
 @app.route('/user/<user_id>', methods=["DELETE"])
 async def delete_user(request, user_id):
+    # Avoid foreign key constraints
+    query = "SET foreign_key_checks = 0;"
+    cursor.execute(query)
     query = "DELETE FROM user WHERE user_id = %s;"
     cursor.execute(query, user_id)
+    query = "SET foreign_key_checks = 1;"
+
+    # Soft ON DELETE CASCADE
+    cursor.execute(query)
     query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, user_id)
     query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE user_id = %s AND deleted_at IS NULL;"
@@ -297,8 +304,15 @@ async def delete_user(request, user_id):
 
 @app.route('/toon/<toon_id>', methods=["DELETE"])
 async def delete_toon(request, toon_id):
+    # Avoid foreign key constraints
+    query = "SET foreign_key_checks = 0;"
+    cursor.execute(query)
     query = "DELETE FROM toon WHERE toon_id = %s;"
     cursor.execute(query, toon_id)
+    query = "SET foreign_key_checks = 1;"
+    cursor.execute(query)
+
+    # Soft ON DELETE CASCADE
     query = "UPDATE star SET deleted_at = CURRENT_TIMESTAMP WHERE toon_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, toon_id)
     db.commit()
@@ -316,8 +330,15 @@ async def delete_star(request, star_id):
 
 @app.route('/episode/<episode_id>', methods=["DELETE"])
 async def delete_episode(request, episode_id):
+    # Avoid foreign key constraints
+    query = "SET foreign_key_checks = 0;"
+    cursor.execute(query)
     query = "DELETE FROM episode WHERE episode_id = %s;"
     cursor.execute(query, episode_id)
+    query = "SET foreign_key_checks = 1;"
+    cursor.execute(query)
+
+    # Soft ON DELETE CASCADE
     query = "UPDATE view_history SET deleted_at = CURRENT_TIMESTAMP WHERE episode_id = %s AND deleted_at IS NULL;"
     cursor.execute(query, episode_id)
     db.commit()
