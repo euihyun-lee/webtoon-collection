@@ -151,7 +151,7 @@ def update(addr, data):
     )
     assert response, (
         f"Got response status code {response.status_code} "
-        f"for ADDR: {addr}, DATA: {data}"
+        f"for PUT ADDR: {addr}, DATA: {data}"
     )
     result = response.content
     return result.decode("utf-8")
@@ -201,6 +201,48 @@ def test_update(dataset):
 
     for table in dataset:
         _test(table)
+
+
+def delete(addr):
+    response = requests.delete(f"{API_ADDR}/{addr}")
+    assert response, (
+        f"Got response status code {response.status_code} "
+        f"for DELETE ADDR: {addr}"
+    )
+    result = response.content
+    return result.decode("utf-8")
+
+
+def test_delete(dataset):
+    for user_id in dataset["user"]:
+        is_deleted = delete(f"user/{user_id}")
+        assert is_deleted == "True", (
+            f"Delete result should be always 'True', got: {is_deleted}"
+        )
+
+    for toon_id in dataset["toon"]:
+        is_deleted = delete(f"toon/{toon_id}")
+        assert is_deleted == "True", (
+            f"Delete result should be always 'True', got: {is_deleted}"
+        )
+
+    for star_id in dataset["star"]:
+        is_deleted = delete(f"star/{star_id}")
+        assert is_deleted == "True", (
+            f"Delete result should be always 'True', got: {is_deleted}"
+        )
+
+    for episode_id in dataset["episode"]:
+        is_deleted = delete(f"episode/{episode_id}")
+        assert is_deleted == "True", (
+            f"Delete result should be always 'True', got: {is_deleted}"
+        )
+
+    for history_id in dataset["history"]:
+        is_deleted = delete(f"history/{history_id}")
+        assert is_deleted == "True", (
+            f"Delete result should be always 'True', got: {is_deleted}"
+        )
 
 
 if __name__ == "__main__":
@@ -365,3 +407,20 @@ if __name__ == "__main__":
 
     print("Testing Update API...")
     test_update(dataset_new)
+
+    # Delete dataset
+    users_del = ["gildong"]
+    toons_del = [2]
+    stars_del = [1]
+    episodes_del = [2]
+    histories_del = [2]
+    dataset_del = {
+        "user": users_del,
+        "toon": toons_del,
+        "star": stars_del,
+        "episode": episodes_del,
+        "history": histories_del,
+    }
+
+    print("Testing Delete API...")
+    test_delete(dataset_del)
