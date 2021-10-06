@@ -214,16 +214,48 @@ def delete(addr):
 
 
 def test_delete(dataset):
+    # Delete user
     for user_id in dataset["user"]:
         is_deleted = delete(f"user/{user_id}")
         assert is_deleted == "True", (
             f"Delete result should be always 'True', got: {is_deleted}"
         )
+        # Check the row is deleted
+        should_be_blank = read(f"user/{user_id}")
+        assert len(should_be_blank) == 0, (
+            f"{user_id} in user table is not deleted. "
+            f"Remaining data is: {should_be_blank}"
+        )
+        # Check soft ON DELETE CASCADE for star
+        should_be_blank = read(f"user/{user_id}/star")
+        assert len(should_be_blank) == 0, (
+            f"Stars for user {user_id} is not (soft) deleted. "
+            f"Remaining data is: {should_be_blank}"
+        )
+        # Check soft ON DELETE CASCADE for view_history
+        should_be_blank = read(f"user/{user_id}/history")
+        assert len(should_be_blank) == 0, (
+            f"History for user {user_id} is not (soft) deleted. "
+            f"Remaining data is: {should_be_blank}"
+        )
+
 
     for toon_id in dataset["toon"]:
         is_deleted = delete(f"toon/{toon_id}")
         assert is_deleted == "True", (
             f"Delete result should be always 'True', got: {is_deleted}"
+        )
+        # Check the row is deleted
+        should_be_blank = read(f"toon/{toon_id}")
+        assert len(should_be_blank) == 0, (
+            f"{toon_id} in toon table is not deleted. "
+            f"Remaining data is: {should_be_blank}"
+        )
+        # Check ON DELETE CASCADE for episode
+        should_be_blank = read(f"toon/{toon_id}/episode")
+        assert len(should_be_blank) == 0, (
+            f"Episode for toon {toon_id} is not deleted. "
+            f"Remaining data is: {should_be_blank}"
         )
 
     for star_id in dataset["star"]:
@@ -231,11 +263,29 @@ def test_delete(dataset):
         assert is_deleted == "True", (
             f"Delete result should be always 'True', got: {is_deleted}"
         )
+        # Check the row is (soft) deleted
+        should_be_blank = read(f"star/{star_id}")
+        assert len(should_be_blank) == 0, (
+            f"{star_id} in star table is not deleted. "
+            f"Remaining data is: {should_be_blank}"
+        )
 
     for episode_id in dataset["episode"]:
         is_deleted = delete(f"episode/{episode_id}")
         assert is_deleted == "True", (
             f"Delete result should be always 'True', got: {is_deleted}"
+        )
+        # Check the row is deleted
+        should_be_blank = read(f"episode/{episode_id}")
+        assert len(should_be_blank) == 0, (
+            f"{episode_id} in episode table is not deleted. "
+            f"Remaining data is: {should_be_blank}"
+        )
+        # Check soft ON DELETE CASCADE for view_history
+        should_be_blank = read(f"episode/{episode_id}/history")
+        assert len(should_be_blank) == 0, (
+            f"History for episode {episode_id} is not (soft) deleted. "
+            f"Remaining data is: {should_be_blank}"
         )
 
     for history_id in dataset["history"]:
