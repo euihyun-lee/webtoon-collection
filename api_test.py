@@ -1,7 +1,9 @@
-from pprint import pprint
+import base64
 import pymysql
 import requests
 import ujson as json
+from io import BytesIO
+from PIL import Image
 
 import utils
 import config
@@ -293,6 +295,103 @@ def test_delete(dataset):
         assert is_deleted == "True", (
             f"Delete result should be always 'True', got: {is_deleted}"
         )
+
+
+# Test functions for non-CRUD
+def unseen(user_id):
+    addr = f"unseen/user/{user_id}"
+    response = requests.get(f"{API_ADDR}/(addr}")
+    assert response, (
+        f"Got response status code {response.status_code} "
+        f"for GET ADDR: {addr}"
+    )
+    result = json.loads(response.content)
+    return result
+
+
+def unseen_expect(dataset, user_id):
+    toons_stared = [star["toon_id"] for star in dataset["star"] 
+                    if star["user_id"] == user_id]
+    episodes_viewed = [history["episode_id"] for history in dataset["history"]
+                       if history["user_id"] == user_id]
+    episodes = [dict(episode, episode_id=idx) for idx, episode
+                in enumerate(dataset["episode"], start=1)]
+    unseen = [episode["episode_id"] for episode in episodes
+              if episode["toon_id"] in toons_stared
+              and not episode["episode_id"] in episodes_viewed]
+    return unseen
+
+
+def test_unseen(dataset):
+    for user in dataset["user"]:
+        last_updated_at = None
+        user_id = user["user_id"]
+        expect = unseen_expect(dataset, user_id)
+        result = unseen(user_id)
+        for episode in result:
+            assert episode["episode_id"] in expect, (
+                f"Episode {episode['episode_id']} is not expected. "
+                f"Expected episodes are: {expect}"
+            )
+            if not last_updated_at:
+                last_updated_at = episode["updated_at"]
+            else:
+                assert episode["updated_at"] <= last_updated_at, (
+                    "Order of unseen is not correct. "
+                    f"Episode {episode['episode_id']}: "
+                    f"{episode['updated_at']} > {last_updated_at}"
+                )
+                last_updated_at = episode["updated_at"]
+
+
+def browse(platform, weekday=None):
+    if weekday:
+        addr = f"browse/{platform}?weekday={weekday}"
+    else:
+        addr = f"browse/{platform}"
+    response = requests.get(f"{API_ADDR}/{addr}")
+    assert response, (
+        f"Got response status code {response.status_code} "
+        f"for GET ADDR: {addr}"
+    )
+    result = json.loads(response.content)
+    return result
+
+
+def browse_expect(dataset, platform, weekday=None):
+    pass
+
+
+def test_browse(dataset):
+    def _is_result_same(result, expect):
+        pass
+
+    platforms = ["naver", "daum", "kakao"]
+    results = {platform: browse(platform) for platform in platforms}
+    for platform in platforms:
+        for weekday in utils.WEEKDAY_REPRS:
+            expect = browse_expect(dataset, platform, weekday)
+            result = browse(platform, weekday)
+            assert _is_result_same(result, expect)
+
+
+def thumbnail(category, category_id):
+    assert category in ["toon", "episode"], (
+        f"Getting thumbnail should be done with 'toon' or 'episode'. "
+        f"Requested category is: {category}"
+    )
+    addr = f"thumbnail/{category}/{category_id}"
+    response = requests.get(f"{API_ADDR}/{addr}")
+    assert response, (
+        f"Got response status code {response.status_code} "
+        f"for GET ADDR: {addr}"
+    )
+    result = Image.open(BytesIO(base64.b64decode(response.content)))
+    return result
+
+
+def test_thumbnail():
+    pass
 
 
 if __name__ == "__main__":
